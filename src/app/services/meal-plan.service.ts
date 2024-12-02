@@ -56,4 +56,16 @@ export class MealPlanService {
       })
     );
   }
+
+  async deleteMealPlan(id: string): Promise<void> {
+    try {
+      const user = await this.auth.currentUser;
+      if (!user) throw new Error('No user logged in');
+
+      await this.firestore.collection('meal_plans').doc(id).delete();
+    } catch (error) {
+      console.error('Error deleting meal plan:', error);
+      throw error;
+    }
+  }
 }

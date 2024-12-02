@@ -34,9 +34,7 @@ import { Router } from '@angular/router';
           </ion-button>
         </ion-card-content>
       </ion-card>
-    </ion-content>
 
-    <ion-content class="ion-padding">
       <ion-grid>
         <ion-row>
           <ion-col size="6">
@@ -66,9 +64,16 @@ import { Router } from '@angular/router';
             </ion-button>
           </ion-col>
         </ion-row>
+        <ion-row>
+          <ion-col size="12">
+            <ion-button expand="block" (click)="goTo('meal-plan')" color="tertiary">
+              <ion-icon name="calendar" slot="start"></ion-icon>
+              Mi Plan Semanal
+            </ion-button>
+          </ion-col>
+        </ion-row>
       </ion-grid>
     </ion-content>
-
   `
 })
 export class HomePage implements OnInit {
