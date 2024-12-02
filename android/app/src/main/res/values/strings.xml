@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DeAlgoricoIonic</string>
+    <string name="title_activity_main">DeAlgoricoIonic</string>
+    <string name="package_name">com.dealgoricoionic.app</string>
+    <string name="custom_url_scheme">com.dealgoricoionic.app</string>
+    <string name="server_client_id">866279976542-f1vip3bh5s8r1m7nbnjsmts2kmrkdrip.apps.googleusercontent.com</string>
+</resources>

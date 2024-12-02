@@ -1,0 +1,7 @@
+{
+  "name": "DeAlgoRico",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
