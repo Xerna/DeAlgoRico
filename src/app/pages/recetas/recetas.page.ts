@@ -1,8 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { SpoonacularService } from '../../services/spoonacular.service';
 import { DespensaService } from '../../services/despensa.service';
-import { LoadingController, AlertController } from '@ionic/angular';
+import { LoadingController, AlertController, ToastController } from '@ionic/angular';
 import { MealPlanService } from '../../services/meal-plan.service';
+import { ShoppingListService } from '../../services/shopping-list.service';
+
+interface RecipeIngredient {
+  name: string;
+  [key: string]: any; // Para otras propiedades que pueda tener
+}
 
 @Component({
   selector: 'app-recetas',
@@ -65,7 +71,9 @@ export class RecetasPage implements OnInit {
     private despensaService: DespensaService,
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController,
-    private mealPlanService: MealPlanService
+    private mealPlanService: MealPlanService,
+    private shoppingListService: ShoppingListService,
+    private toastCtrl: ToastController
   ) {}
 
   ngOnInit() {
@@ -74,12 +82,7 @@ export class RecetasPage implements OnInit {
 
   async addToMealPlan(receta: any) {
     const alert = await this.alertCtrl.create({
-      header: 'Seleccionar día',
-      inputs: this.weekDays.map(day => ({
-        type: 'radio',
-        label: day.label,
-        value: day.value
-      })),
+      // ... configuración del alert ...
       buttons: [
         {
           text: 'Cancelar',
@@ -90,7 +93,7 @@ export class RecetasPage implements OnInit {
           handler: async (day) => {
             if (day) {
               const loading = await this.loadingCtrl.create({
-                message: 'Agregando al plan...'
+                message: 'Procesando...'
               });
               await loading.present();
 
@@ -101,11 +104,17 @@ export class RecetasPage implements OnInit {
                   receta.image,
                   day
                 );
+
+                await Promise.all(
+                  (receta.missedIngredients as RecipeIngredient[]).map(ing => 
+                    this.shoppingListService.addIngredient(ing.name)
+                  )
+                );
                 
                 loading.dismiss();
                 const successAlert = await this.alertCtrl.create({
                   header: 'Éxito',
-                  message: 'Receta añadida al plan semanal',
+                  message: 'Receta añadida al plan semanal y los ingredientes faltantes a la lista de compras',
                   buttons: ['OK']
                 });
                 await successAlert.present();
@@ -114,7 +123,7 @@ export class RecetasPage implements OnInit {
                 loading.dismiss();
                 const errorAlert = await this.alertCtrl.create({
                   header: 'Error',
-                  message: 'No se pudo añadir la receta al plan',
+                  message: 'No se pudo completar la operación',
                   buttons: ['OK']
                 });
                 await errorAlert.present();
@@ -127,6 +136,7 @@ export class RecetasPage implements OnInit {
 
     await alert.present();
   }
+
 
   async cargarRecetas() {
     const loading = await this.loadingCtrl.create({
