@@ -10,48 +10,126 @@ import { AlertController, LoadingController, ToastController } from '@ionic/angu
         <ion-buttons slot="start">
           <ion-back-button defaultHref="/home"></ion-back-button>
         </ion-buttons>
-        <ion-title>Lista de Compras</ion-title>
+        <ion-title>
+          <span class="gradient-text">Lista de Compras</span>
+        </ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding">
-      <ion-list>
-        <ion-item *ngFor="let item of shoppingList">
-          <ion-checkbox 
-            slot="start" 
-            [checked]="item.completed"
-            (ionChange)="toggleComplete(item)">
-          </ion-checkbox>
-          <ion-label [class.completed]="item.completed">
-            {{ item.ingredientName }}
-          </ion-label>
-          <ion-button 
-            slot="end" 
-            fill="clear" 
-            color="danger"
-            (click)="deleteItem(item)">
-            <ion-icon name="trash"></ion-icon>
-          </ion-button>
-        </ion-item>
-      </ion-list>
-
-      <div *ngIf="shoppingList.length === 0" class="ion-text-center ion-padding">
-        <p>No hay ingredientes en tu lista de compras</p>
+    <ion-content class="content-container">
+      <!-- Estado vacío -->
+      <div *ngIf="shoppingList.length === 0" class="empty-state">
+        <ion-icon name="cart-outline"></ion-icon>
+        <h3>Lista de compras vacía</h3>
+        <p>Agrega ingredientes desde las recetas</p>
       </div>
+
+      <!-- Lista de compras -->
+      <ion-list *ngIf="shoppingList.length > 0" class="shopping-list">
+        <ion-item-sliding *ngFor="let item of shoppingList">
+          <ion-item class="shopping-item" [class.completed]="item.completed">
+            <ion-checkbox 
+              slot="start" 
+              [checked]="item.completed"
+              (ionChange)="toggleComplete(item)"
+              class="custom-checkbox">
+            </ion-checkbox>
+            <ion-label>{{ item.ingredientName }}</ion-label>
+            <ion-button 
+              slot="end" 
+              fill="clear" 
+              color="danger"
+              (click)="deleteItem(item)">
+              <ion-icon name="trash-outline"></ion-icon>
+            </ion-button>
+          </ion-item>
+        </ion-item-sliding>
+      </ion-list>
     </ion-content>
 
-    <ion-footer>
+    <ion-footer *ngIf="hasCompletedItems" class="footer">
       <ion-toolbar>
-        <ion-button expand="block" (click)="clearCompleted()" [disabled]="!hasCompletedItems">
+        <ion-button expand="block" (click)="clearCompleted()" class="clear-button">
+          <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
           Limpiar Completados
         </ion-button>
       </ion-toolbar>
     </ion-footer>
   `,
   styles: [`
-    .completed {
+    .content-container {
+      --background: #f5f5f5;
+    }
+
+    .gradient-text {
+      font-weight: bold;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 60vh;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .empty-state ion-icon {
+      font-size: 64px;
+      color: #4CAF50;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      margin: 0 0 8px;
+      color: #333;
+      font-size: 1.2em;
+    }
+
+    .empty-state p {
+      margin: 0;
+      color: #666;
+    }
+
+    .shopping-list {
+      background: transparent;
+      padding: 8px 16px;
+    }
+
+    .shopping-item {
+      --background: white;
+      --border-radius: 12px;
+      margin-bottom: 8px;
+      --padding-start: 8px;
+      --padding-end: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .shopping-item.completed {
+      --background: #f8f8f8;
+    }
+
+    .completed ion-label {
       text-decoration: line-through;
-      color: var(--ion-color-medium);
+      color: #888;
+    }
+
+    .custom-checkbox {
+      --size: 24px;
+      --checkbox-background-checked: #4CAF50;
+      margin-right: 12px;
+    }
+
+    .footer {
+      padding: 8px 16px;
+      --background: transparent;
+    }
+
+    .clear-button {
+      --background: #4CAF50;
+      --border-radius: 12px;
+      margin: 0;
     }
   `]
 })
@@ -86,7 +164,8 @@ export class ComprasPage implements OnInit {
       const toast = await this.toastCtrl.create({
         message: 'Error al actualizar el estado',
         duration: 2000,
-        color: 'danger'
+        color: 'danger',
+        position: 'bottom'
       });
       await toast.present();
     }
@@ -110,7 +189,8 @@ export class ComprasPage implements OnInit {
               await this.shoppingListService.deleteItem(item.id!);
               const toast = await this.toastCtrl.create({
                 message: 'Ingrediente eliminado',
-                duration: 2000
+                duration: 2000,
+                position: 'bottom'
               });
               await toast.present();
             } catch (error) {
@@ -118,7 +198,8 @@ export class ComprasPage implements OnInit {
               const toast = await this.toastCtrl.create({
                 message: 'Error al eliminar el ingrediente',
                 duration: 2000,
-                color: 'danger'
+                color: 'danger',
+                position: 'bottom'
               });
               await toast.present();
             }
@@ -131,7 +212,8 @@ export class ComprasPage implements OnInit {
 
   async clearCompleted() {
     const loading = await this.loadingCtrl.create({
-      message: 'Limpiando items completados...'
+      message: 'Limpiando items completados...',
+      cssClass: 'custom-loading'
     });
     await loading.present();
 
@@ -142,7 +224,8 @@ export class ComprasPage implements OnInit {
       loading.dismiss();
       const toast = await this.toastCtrl.create({
         message: 'Items completados eliminados',
-        duration: 2000
+        duration: 2000,
+        position: 'bottom'
       });
       await toast.present();
     } catch (error) {
@@ -151,7 +234,8 @@ export class ComprasPage implements OnInit {
       const toast = await this.toastCtrl.create({
         message: 'Error al limpiar los items',
         duration: 2000,
-        color: 'danger'
+        color: 'danger',
+        position: 'bottom'
       });
       await toast.present();
     }

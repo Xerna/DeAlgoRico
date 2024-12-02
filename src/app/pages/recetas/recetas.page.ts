@@ -7,7 +7,7 @@ import { ShoppingListService } from '../../services/shopping-list.service';
 
 interface RecipeIngredient {
   name: string;
-  [key: string]: any; // Para otras propiedades que pueda tener
+  [key: string]: any;
 }
 
 @Component({
@@ -18,41 +18,119 @@ interface RecipeIngredient {
         <ion-buttons slot="start">
           <ion-back-button defaultHref="/home"></ion-back-button>
         </ion-buttons>
-        <ion-title>Recetas Sugeridas</ion-title>
+        <ion-title>
+          <span class="gradient-text">Recetas Sugeridas</span>
+        </ion-title>
       </ion-toolbar>
     </ion-header>
-    <ion-content class="ion-padding">
+
+    <ion-content>
       <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
         <ion-refresher-content></ion-refresher-content>
       </ion-refresher>
-      <div *ngIf="recetas.length === 0" class="ion-text-center ion-padding">
-        <p>No se encontraron recetas con tus ingredientes actuales</p>
+
+      <!-- Estado vacío -->
+      <div *ngIf="recetas.length === 0" class="empty-state">
+        <ion-icon name="restaurant-outline"></ion-icon>
+        <h3>No hay recetas disponibles</h3>
+        <p>Agrega ingredientes a tu despensa para obtener sugerencias</p>
       </div>
-      <ion-list>
-        <ion-card *ngFor="let receta of recetas">
+
+      <!-- Lista de recetas -->
+      <div class="recipes-container" *ngIf="recetas.length > 0">
+        <ion-card *ngFor="let receta of recetas" class="recipe-card">
           <img [src]="receta.image" [alt]="receta.title"/>
           <ion-card-header>
             <ion-card-title>{{ receta.title }}</ion-card-title>
           </ion-card-header>
-          <ion-card-content>
-            <p><strong>Ingredientes que tienes:</strong></p>
-            <ion-chip *ngFor="let ing of receta.usedIngredients" color="success">
-              {{ ing.name }}
-            </ion-chip>
-            
-            <p><strong>Ingredientes que necesitas:</strong></p>
-            <ion-chip *ngFor="let ing of receta.missedIngredients" color="warning">
-              {{ ing.name }}
-            </ion-chip>
 
-            <ion-button expand="block" (click)="addToMealPlan(receta)" class="ion-margin-top">
+          <ion-card-content>
+            <p><strong>Ingredientes disponibles:</strong></p>
+            <div class="chips-wrapper">
+              <ion-chip *ngFor="let ing of receta.usedIngredients" class="success-chip">
+                <ion-icon name="checkmark-circle"></ion-icon>
+                {{ ing.name }}
+              </ion-chip>
+            </div>
+
+            <p><strong>Ingredientes necesarios:</strong></p>
+            <div class="chips-wrapper">
+              <ion-chip *ngFor="let ing of receta.missedIngredients" class="warning-chip">
+                <ion-icon name="add-circle"></ion-icon>
+                {{ ing.name }}
+              </ion-chip>
+            </div>
+
+            <ion-button expand="block" (click)="addToMealPlan(receta)" class="add-button">
+              <ion-icon name="calendar" slot="start"></ion-icon>
               Añadir al Plan Semanal
             </ion-button>
           </ion-card-content>
         </ion-card>
-      </ion-list>
+      </div>
     </ion-content>
-  `
+  `,
+  styles: [`
+    .gradient-text {
+      font-weight: bold;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+
+    .empty-state ion-icon {
+      font-size: 4rem;
+      color: #4CAF50;
+    }
+
+    .recipes-container {
+      padding: 1rem;
+    }
+
+    .recipe-card {
+      margin-bottom: 1rem;
+    }
+
+    .recipe-card img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+    }
+
+    .chips-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.5rem 0 1rem 0;
+    }
+
+    .success-chip {
+      --background: #E8F5E9;
+      --color: #2E7D32;
+    }
+
+    .warning-chip {
+      --background: #FFF3E0;
+      --color: #F57C00;
+    }
+
+    .add-button {
+      margin-top: 1rem;
+    }
+
+    ion-card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    ion-card-content p {
+      margin-top: 1rem;
+      color: #666;
+    }
+  `]
 })
 export class RecetasPage implements OnInit {
   recetas: any[] = [];
@@ -82,7 +160,13 @@ export class RecetasPage implements OnInit {
 
   async addToMealPlan(receta: any) {
     const alert = await this.alertCtrl.create({
-      // ... configuración del alert ...
+      header: 'Seleccionar día',
+      inputs: this.weekDays.map(day => ({
+        name: 'day',
+        type: 'radio',
+        label: day.label,
+        value: day.value
+      })),
       buttons: [
         {
           text: 'Cancelar',
@@ -93,7 +177,8 @@ export class RecetasPage implements OnInit {
           handler: async (day) => {
             if (day) {
               const loading = await this.loadingCtrl.create({
-                message: 'Procesando...'
+                message: 'Agregando receta...',
+                cssClass: 'custom-loading'
               });
               await loading.present();
 
@@ -112,21 +197,23 @@ export class RecetasPage implements OnInit {
                 );
                 
                 loading.dismiss();
-                const successAlert = await this.alertCtrl.create({
-                  header: 'Éxito',
-                  message: 'Receta añadida al plan semanal y los ingredientes faltantes a la lista de compras',
-                  buttons: ['OK']
+                const toast = await this.toastCtrl.create({
+                  message: 'Receta añadida al plan semanal',
+                  duration: 2000,
+                  color: 'success',
+                  position: 'bottom'
                 });
-                await successAlert.present();
+                await toast.present();
               } catch (error) {
                 console.error('Error:', error);
                 loading.dismiss();
-                const errorAlert = await this.alertCtrl.create({
-                  header: 'Error',
-                  message: 'No se pudo completar la operación',
-                  buttons: ['OK']
+                const toast = await this.toastCtrl.create({
+                  message: 'Error al agregar la receta',
+                  duration: 2000,
+                  color: 'danger',
+                  position: 'bottom'
                 });
-                await errorAlert.present();
+                await toast.present();
               }
             }
           }
@@ -137,12 +224,13 @@ export class RecetasPage implements OnInit {
     await alert.present();
   }
 
-
   async cargarRecetas() {
     const loading = await this.loadingCtrl.create({
-      message: 'Buscando recetas...'
+      message: 'Buscando recetas...',
+      cssClass: 'custom-loading'
     });
     await loading.present();
+
     try {
       this.despensaService.getDespensa().subscribe({
         next: async (items) => {
@@ -158,6 +246,7 @@ export class RecetasPage implements OnInit {
                 error: (error) => {
                   console.error('Error al obtener recetas:', error);
                   loading.dismiss();
+                  this.showError();
                 }
               });
           } else {
@@ -168,12 +257,24 @@ export class RecetasPage implements OnInit {
         error: (error) => {
           console.error('Error al obtener ingredientes:', error);
           loading.dismiss();
+          this.showError();
         }
       });
     } catch (error) {
       console.error('Error:', error);
       loading.dismiss();
+      this.showError();
     }
+  }
+
+  async showError() {
+    const toast = await this.toastCtrl.create({
+      message: 'Error al cargar las recetas',
+      duration: 2000,
+      color: 'danger',
+      position: 'bottom'
+    });
+    await toast.present();
   }
 
   async doRefresh(event: any) {
